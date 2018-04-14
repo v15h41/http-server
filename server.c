@@ -6,14 +6,28 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
+void get_relative_file_location(char *file_location, char *buffer) {
+    int i;
+    for (i = 4; i < 1023; i++) {
+        if (buffer[i] == ' ') {
+            file_location[i-4] = '\0';
+            break;
+        } else {
+            file_location[i-4] = buffer[i];
+        }
+    }
+}
+
 int main(int argc, char** argv) {
     int sockfd, newsockfd, portno;// clilen;
 	char buffer[1024];
+    char *dir;
 	struct sockaddr_in serv_addr, cli_addr;
 	socklen_t clilen;
 	int n;
-
-	portno = 3000;
+    
+	portno = atoi(argv[2]);
+    dir = argv[1];
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0); //create socket
 
@@ -32,8 +46,20 @@ int main(int argc, char** argv) {
 
     n = read(newsockfd,buffer,1023);
 
-    printf("%s", buffer);
+    char file_location[1024];
+    get_relative_file_location(file_location, buffer);
+    
+    char* absolute_file_location = strcat(dir, file_location);
 
+    
+
+    if (access(absolute_file_location, F_OK) != -1) {
+        printf("found\n");
+    }
+
+    printf("%s\n", file_location);
+
+    n = write(newsockfd,"HTTP/1.0 404 Not Found\n",24);
 
     close(sockfd);
 
