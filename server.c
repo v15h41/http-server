@@ -18,6 +18,27 @@ void get_relative_file_location(char *file_location, char *buffer) {
     }
 }
 
+void send_404(int sockfd) {
+    write(sockfd,"HTTP/1.0 404 Not Found\n",23);
+}
+
+char *get_mime(char *file) {
+    char *ext = strrchr(file, '.');
+    if (!ext) {
+        return "";
+    }
+
+    if (strcmp(ext+1, "html") == 0) {
+        return"text/html";        
+    } else if (strcmp(ext+1, "css") == 0) {
+        return "text/css";        
+    } else if (strcmp(ext+1, "jpg") == 0 || strcmp(ext+1, "jpeg") == 0) {
+        return "image/jpeg";
+    } else {
+        return "";
+    }
+}
+
 int main(int argc, char** argv) {
     int sockfd, newsockfd, portno;// clilen;
 	char buffer[1024];
@@ -51,15 +72,23 @@ int main(int argc, char** argv) {
     
     char* absolute_file_location = strcat(dir, file_location);
 
-    
+    if (access(absolute_file_location, F_OK) != -1 
+        && strcmp(get_mime(file_location), "") != 0) {
+        char response[100]; 
+        response[0] = '\0';
+        strcat(response, "HTTP/1.0 200 OK\nContent-Length: 5\nContent-Type: ");
+        strcat(response, get_mime(file_location));
+        strcat(response, "\n\nhello");
 
-    if (access(absolute_file_location, F_OK) != -1) {
-        printf("found\n");
+        printf("%s %d", response, (int) strlen(response));
+
+        write(newsockfd,response,(int) strlen(response));
+    } else {
+        send_404(newsockfd);
     }
 
-    printf("%s\n", file_location);
 
-    n = write(newsockfd,"HTTP/1.0 404 Not Found\n",24);
+    
 
     close(sockfd);
 
