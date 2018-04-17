@@ -1,0 +1,29 @@
+./test/index.htmlHTTP/1.0 200 OK
+Content-Type: text/html
+
+ 41
+./test/junk.html./test/style.cssHTTP/1.0 200 OK
+Content-Type: text/css
+
+ 40
+./test/script.jsHTTP/1.0 200 OK
+Content-Type: application/javascript
+
+ 54
+./test/sample.jpgHTTP/1.0 200 OK
+Content-Type: image/jpeg
+
+ 42
+./test/directory/index.htmlHTTP/1.0 200 OK
+Content-Type: text/html
+
+ 41
+./test/directory/style.cssHTTP/1.0 200 OK
+Content-Type: text/css
+
+ 40
+./test/directory/script.jsHTTP/1.0 200 OK
+Content-Type: application/javascript
+
+ 54
+./test/dire

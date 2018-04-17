@@ -44,7 +44,8 @@ do_http_get () {
     header_pass=false
     get_pass=false
     mime_pass=false
-    echo wget -q --server-response -O $temp_file $test_url 2> $temp_header
+    wget -q --server-response -O $temp_file $test_url 2> $temp_header
+    cat $temp_header
     if [ "$test_resp" == "404" ];then
         if grep -Eiq 'HTTP/1.0 404|HTTP/1.1 404' $temp_header 
         then
@@ -53,7 +54,6 @@ do_http_get () {
         get_pass=true
         mime_pass=true
     else
-        echo more $temp_header
         if grep -Eiq 'HTTP/1.0 200 OK$|HTTP/1.1 200 OK$' $temp_header 
         then
             header_pass=true
@@ -71,6 +71,8 @@ do_http_get () {
             get_pass=false
         fi
     fi
+    rm -f "$temp_file"
+    rm -f "$temp_header"
     
     if $header_pass && $get_pass && $mime_pass;
     then
