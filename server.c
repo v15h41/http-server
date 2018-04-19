@@ -6,6 +6,12 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <pthread.h>
+
+struct arg_struct {
+    int newsockfd;
+    char* file_dir;
+};
 
 void get_relative_file_location(char *file_location, char *buffer) {
     int i;
@@ -42,12 +48,61 @@ char *get_mime(char *file) {
     }
 }
 
-int main(int argc, char** argv) {
-    int sockfd, newsockfd, portno;// clilen;
+void *respond(void* arguments) {
+    struct arg_struct *args = arguments;
+
+    int newsockfd = args->newsockfd;
+    char *file_dir = args->file_dir;
+
 	char buffer[1024];
-	struct sockaddr_in serv_addr, cli_addr;
-	socklen_t clilen;
-	int n;
+    memset(buffer, '0', sizeof(buffer)); 
+
+    read(newsockfd,buffer,1023);
+
+    char file_location[1024];
+    get_relative_file_location(file_location, buffer);
+    
+    char dir[1000];
+    strcpy(dir, file_dir);
+    char* absolute_file_location = strcat(dir, file_location);
+
+    if (access(absolute_file_location, F_OK) != -1 
+        && strcmp(get_mime(file_location), "") != 0) {
+        
+        char response[100]; 
+        response[0] = '\0';
+        strcat(response, "HTTP/1.0 200 OK\r\nContent-Type: ");
+        strcat(response, get_mime(file_location));
+        strcat(response, "\r\n\r\n");
+
+        write(newsockfd,response,(int) strlen(response));
+
+        char send_buffer[1024];
+        int fd = open(absolute_file_location, O_RDONLY);
+        while (1) {
+            int bytes_read = read(fd, send_buffer, sizeof(send_buffer));
+            if (bytes_read == 0) 
+                break;
+            void *p = send_buffer;
+            while (bytes_read > 0) {
+                int bytes_written = write(newsockfd, p, bytes_read);
+                bytes_read -= bytes_written;
+                p += bytes_written;
+            }
+        }
+
+    } else {
+        send_404(newsockfd);
+    }
+    
+    close(newsockfd);
+
+    return NULL;
+}
+
+int main(int argc, char** argv) {
+    int sockfd, newsockfd, portno;
+	struct sockaddr_in serv_addr;
     
 	portno = atoi(argv[1]);
 
@@ -60,74 +115,19 @@ int main(int argc, char** argv) {
     serv_addr.sin_port = htons(portno); //Listen on port 
 
     bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)); 
-    
-
-    
-        
+            
     while (1) {
-        listen(sockfd,1);
+        listen(sockfd,5);
 
         newsockfd = accept(sockfd, (struct sockaddr*)NULL, NULL); 
 
-        memset(buffer, '0', sizeof(buffer)); 
+        struct arg_struct args;
+        args.newsockfd = newsockfd;
+        args.file_dir = argv[2];
 
-        n = read(newsockfd,buffer,1023);
-
-
-        char file_location[1024];
-        get_relative_file_location(file_location, buffer);
-        
-        char dir[1000];
-        strcpy(dir, argv[2]);
-        char* absolute_file_location = strcat(dir, file_location);
-        printf("%s", absolute_file_location);
-
-        if (access(absolute_file_location, F_OK) != -1 
-            && strcmp(get_mime(file_location), "") != 0) {
-            
-            char response[100]; 
-            response[0] = '\0';
-            strcat(response, "HTTP/1.0 200 OK\nContent-Type: ");
-            strcat(response, get_mime(file_location));
-            strcat(response, "\n\n");
-
-            printf("%s %d\n", response, (int) strlen(response));
-
-            write(newsockfd,response,(int) strlen(response));
-
-
-/*
-            int bytes_read;
-            void *progress = send_buffer;
-            while ((bytes_read=read(fd, send_buffer, 1024))>0) {
-                int bytes_written = write(newsockfd, progress, bytes_read);
-                bytes_read -= bytes_written;
-                progress += bytes_written;
-            }
-            */
-
-            char send_buffer[1024];
-            int fd = open(absolute_file_location, O_RDONLY);
-            while (1) {
-                int bytes_read = read(fd, send_buffer, sizeof(send_buffer));
-                if (bytes_read == 0) 
-                    break;
-                void *p = send_buffer;
-                while (bytes_read > 0) {
-                    int bytes_written = write(newsockfd, p, bytes_read);
-                    bytes_read -= bytes_written;
-                    p += bytes_written;
-                }
-            }
-
-        } else {
-            send_404(newsockfd);
-        }
-        close(newsockfd);
+        pthread_t tid;
+	    pthread_create(&tid, NULL, &respond, (void*)&args);
     }
     
-
-    
-
     return 0;
 }
