@@ -37,6 +37,7 @@ void get_relative_file_location(char *file_location, char *buffer);
 void send_404(int sockfd);
 char *get_mime(char *file);
 void *respond(void* arguments);
+void send_200(int newsockfd, char *absolute_file_location);
 
 int main(int argc, char** argv) {
     int sockfd, newsockfd, portno;
@@ -67,7 +68,6 @@ int main(int argc, char** argv) {
         struct arg_struct args;
         args.newsockfd = newsockfd;
         args.file_dir = argv[2];
-
 
         //create a new thread and pass the arguments into the function
         pthread_t tid;
