@@ -38,23 +38,13 @@ void send_404(int sockfd);
 char *get_mime(char *file);
 void *respond(void* arguments);
 void send_200(int newsockfd, char *absolute_file_location);
+void bind_socket_to_port(int* sockfd, int portno);
 
 int main(int argc, char** argv) {
-    int sockfd, newsockfd, portno;
-	struct sockaddr_in serv_addr;
-    
-	portno = atoi(argv[1]);
+    int sockfd;    
+	int portno = atoi(argv[1]);
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0); //create socket
-
-    memset(&serv_addr, '0', sizeof(serv_addr));
-    
-    serv_addr.sin_family = AF_INET; //Type of address – internet IP
-    serv_addr.sin_addr.s_addr = INADDR_ANY; //Listen on ANY IP Addr
-    serv_addr.sin_port = htons(portno); //Listen on port 
-
-    //bind socket to defined server address
-    bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)); 
+    bind_socket_to_port(&sockfd, portno);    
             
     //listen for connections
     while (1) {
@@ -62,7 +52,7 @@ int main(int argc, char** argv) {
         listen(sockfd, CONNECTIONS);
 
         //accept the request and pass it to a new socket
-        newsockfd = accept(sockfd, (struct sockaddr*)NULL, NULL); 
+        int newsockfd = accept(sockfd, (struct sockaddr*)NULL, NULL); 
 
         //put required values into the argument struct
         struct arg_struct args;
@@ -75,6 +65,21 @@ int main(int argc, char** argv) {
     }
     
     return 0;
+}
+
+void bind_socket_to_port(int* sockfd, int portno) {
+    //create socket
+    *sockfd = socket(AF_INET, SOCK_STREAM, 0); 
+
+    //create a socket_address struct
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, '0', sizeof(serv_addr));    
+    serv_addr.sin_family = AF_INET; //Type of address – internet IP
+    serv_addr.sin_addr.s_addr = INADDR_ANY; //Listen on ANY IP Addr
+    serv_addr.sin_port = htons(portno); //Listen on port 
+
+    //bind socket to defined server address
+    bind(*sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)); 
 }
 
 //from the request buffer, get the relative location of the requested file
