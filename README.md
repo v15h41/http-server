@@ -6,4 +6,4 @@ An HTTP 1.0 server written in C that handles multiple GET requests concurrently 
 
 Run make to compile.
 
-Run the program through the command line with ./server <port number> <file directory to serve>
+Run the program through the command line with ./server *\<port number\>* *\<file directory to serve\>*
